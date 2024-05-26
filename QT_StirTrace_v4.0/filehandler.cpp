@@ -37,16 +37,17 @@ int fileHandler::openFile(QString filename) {
     this->inputFile = filename;
     this->inputFile.truncate(filename.length() - (1 + fileInfo.suffix().length()));
     QStringList ImageFiles;
-    ImageFiles << "*.bmp"
-               << "*.BMP"
-               << "*.png"
-               << "*.PNG"
-               << "*.jpg"
-               << "*.JPG"
-               << "*.jp2"
-               << "*.JP2"
-               << "*.tiff";
-    if (QDir::match(ImageFiles, filename)) {
+    // TODO: Fix this properly - finding wildcard match
+    ImageFiles << "bmp"
+               << "BMP"
+               << "png"
+               << "PNG"
+               << "jpg"
+               << "JPG"
+               << "jp2"
+               << "JP2"
+               << "iff";
+    if (QDir::match(ImageFiles, filename.right(3))) {
         this->images.push_back(cv::imread(filename.toUtf8().constData(), CV_LOAD_IMAGE_UNCHANGED));
         this->rawData = false;
         this->fileExt = fileInfo.suffix();
