@@ -12,6 +12,7 @@
         qt6.full
         qt6.qtbase
         qtcreator
+        opencv2
 
         # this is for the shellhook portion
         qt6.wrapQtAppsHook
