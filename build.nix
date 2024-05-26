@@ -23,10 +23,15 @@ stdenv.mkDerivation {
     wrapQtAppsHook
   ];
 
+  patchPhase = ''
+    substituteInPlace main.cpp \
+	  --replace "/home/mhilde/src/QT_StirTrace/haarcascade_frontalface_default.xml" "$out/share/haarcascade_frontalface_default.xml"
+  '';
+
   # If the CMakeLists.txt has an install step, this installPhase is not needed.
   # The Qt default project however does not have one.
   installPhase = ''
-    mkdir -p $out/bin
-    cp stirtrace $out/bin/
+    install -D --mode +r $src/haarcascade_frontalface_default.xml $out/share/haarcascade_frontalface_default.xml
+    install -D stirtrace $out/bin/stirtrace
   '';
 }
