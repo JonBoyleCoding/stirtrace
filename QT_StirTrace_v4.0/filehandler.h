@@ -1,8 +1,8 @@
 #ifndef FILEHANDLER_H
 #define FILEHANDLER_H
-#include <Qt/qstring.h>
-#include <Qt/qstringlist.h>
 #include <opencv2/core/core.hpp>
+#include <qstring.h>
+#include <qstringlist.h>
 #include <vector>
 
 class fileHandler {

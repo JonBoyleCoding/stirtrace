@@ -1,8 +1,8 @@
 #ifndef IBINARYFILEREADER_H
 #define IBINARYFILEREADER_H
 #include <opencv2/core/core.hpp>
-#include <qt4/Qt/qstring.h>
-#include <qt4/Qt/qstringlist.h>
+#include <qstring.h>
+#include <qstringlist.h>
 #include <vector>
 
 class IBinaryFileReader {

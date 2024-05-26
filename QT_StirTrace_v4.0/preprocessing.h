@@ -3,8 +3,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <qt4/Qt/qstring.h>
-#include <qt4/Qt/qstringlist.h>
+#include <qstring.h>
+#include <qstringlist.h>
 
 class preprocessing {
   private:

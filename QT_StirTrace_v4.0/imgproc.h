@@ -1,9 +1,10 @@
 #ifndef IMGPROC_H
 #define IMGPROC_H
-#include <Qt/qstring.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <qstring.h>
+
 class imgproc {
   private:
     QString path;

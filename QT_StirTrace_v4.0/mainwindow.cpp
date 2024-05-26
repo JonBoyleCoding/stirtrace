@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "imgproc.h"
 #include "ui_mainwindow.h"
-#include <Qt/qfiledialog.h>
+#include <qfiledialog.h>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);

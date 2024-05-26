@@ -1,8 +1,8 @@
 #include "evaluation.h"
 #include <math.h>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <qt4/Qt/qfile.h>
-#include <qt4/Qt/qtextstream.h>
+#include <qfile.h>
+#include <qtextstream.h>
 
 double segment_size;
 

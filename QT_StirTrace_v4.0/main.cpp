@@ -2,8 +2,8 @@
 #include "imgproc.h"
 #include "mainwindow.h"
 #include "preprocessing.h"
+#include <QApplication>
 #include <QFileInfo>
-#include <QtGui/QApplication>
 #include <stdio.h>
 
 int main(int argc, char *argv[]) {

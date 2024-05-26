@@ -67,7 +67,7 @@ bool DDRawReader::readData(QString file) {
         if (lineSplit.at(0) == "colorintensity")
             colorintensityfile = lineSplit.at(1);
     }
-    if (intensityfile != NULL) {
+    if (!intensityfile.isNull()) {
         QFile *infile = new QFile(FI.absolutePath() + "/" + intensityfile);
         infile->open(QIODevice::ReadOnly);
         Btmpdata = infile->readAll();
@@ -88,7 +88,7 @@ bool DDRawReader::readData(QString file) {
         this->images.push_back(intensity);
     }
 
-    if (topographyfile != NULL) {
+    if (!topographyfile.isNull()) {
         QFile *infile = new QFile(FI.absolutePath() + "/" + intensityfile);
         infile->open(QIODevice::ReadOnly);
         Btmpdata = infile->readAll();

@@ -1,13 +1,13 @@
 #include "filehandler.h"
-/*#include "frtreader.h"
 #include "ddrawreader.h"
 #include "ddrawwriter.h"
-#include "vk4reader.h"*/
 #include <QDir>
 #include <QFileInfo>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+/*#include "frtreader.h"
+#include "vk4reader.h"*/
 using namespace cv;
 using namespace std;
 

@@ -1,7 +1,7 @@
 #ifndef IBINARYFILEWRITER_H
 #define IBINARYFILEWRITER_H
 #include <opencv2/core/core.hpp>
-#include <qt4/Qt/qstring.h>
+#include <qstring.h>
 
 class IBinaryFileWriter {
   public:

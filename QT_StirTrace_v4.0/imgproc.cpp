@@ -1319,13 +1319,13 @@ cv::Mat imgproc::additiveNoise(int noiseLevel, cv::Mat input) {
             input = input + noisepattern;
         } else {
             if (noisepattern.type() != input.type()) {
-                qDebug() << "type missmatch" << endl;
+                qDebug() << "type missmatch" << Qt::endl;
             }
             if (noisepattern.size() != input.size()) {
-                qDebug() << "size missmatch" << endl;
+                qDebug() << "size missmatch" << Qt::endl;
             }
         }
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1370,13 +1370,13 @@ cv::Mat imgproc::gaussianNoise(int noiseLevel, cv::Mat input) {
             input = input + noisepattern;
         } else {
             if (noisepattern.type() != input.type()) {
-                qDebug() << "type missmatch" << endl;
+                qDebug() << "type missmatch" << Qt::endl;
             }
             if (noisepattern.size() != input.size()) {
-                qDebug() << "size missmatch" << endl;
+                qDebug() << "size missmatch" << Qt::endl;
             }
         }
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1394,7 +1394,7 @@ cv::Mat imgproc::medianCutFiltering(int kernelSize, cv::Mat input) {
             else
                 throw 6;
         }
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1413,7 +1413,7 @@ cv::Mat imgproc::removeLines(int frequency, cv::Mat input) {
         }
 
         input = output;
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1427,7 +1427,7 @@ cv::Mat imgproc::removeColumns(int frequency, cv::Mat input) {
         temp = removeLines(frequency, temp);
         cv::transpose(temp, temp);
         input = temp;
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1441,7 +1441,7 @@ cv::Mat imgproc::rotation(double angle, cv::Mat input) {
         cv::Mat output;
         warpAffine(input, output, rotA, input.size());
         input = output;
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1459,7 +1459,7 @@ cv::Mat imgproc::Xstretching(double param, cv::Mat input) {
         cv::Mat output = cv::Mat(input.rows, input.cols * param, input.type());
         warpAffine(input, output, transform, output.size());
         input = output;
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1477,7 +1477,7 @@ cv::Mat imgproc::Yshearing(double param, cv::Mat input) {
         cv::Mat output = cv::Mat::ones(input.rows * (1.0 + param), input.cols, input.type());
         warpAffine(input, output, transform, output.size());
         input = output;
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1488,7 +1488,7 @@ cv::Mat imgproc::rescale(double scalingfactor, cv::Mat input) {
         cv::Mat output = Mat(input.rows * (scalingfactor / 100.0), input.cols * (scalingfactor / 100.0), input.type());
         cv::resize(input, output, output.size(), 0, 0, INTER_LANCZOS4);
         input = output;
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1501,7 +1501,7 @@ cv::Mat imgproc::cropping(double croppercentage, cv::Mat input) {
         cv::Mat roi = Mat(input, cv::Rect((input.cols - nwidth) / 2, (input.rows - nheight) / 2, nwidth, nheight));
         Mat temp = roi.clone();
         input = temp;
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1521,7 +1521,7 @@ cv::Mat imgproc::banding(int width, double param, cv::Mat input, cv::Scalar mean
                 i += width;
             }
         }
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1729,7 +1729,7 @@ cv::Mat imgproc::SaltAndPepperNoise(int noiseLevel, Mat input) {
             }
             }
         }
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -1926,7 +1926,7 @@ cv::Mat imgproc::tilt(double gradientA, double gradientB, double constantC, Mat 
             }
             }
         }
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
 
     return input;
 }
@@ -2022,7 +2022,7 @@ cv::Mat imgproc::passportScale(int targetWidth, int targetHeight, Mat input) {
             cv::resize(temp, output, output.size(), 0, 0, INTER_LANCZOS4);
             input = output;
         }
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
 
@@ -2034,6 +2034,6 @@ cv::Mat imgproc::DoubleScale(double scalingfactor, Mat input) {
         Mat temp = rescale(scalingfactor, input);
         cv::resize(temp, output, output.size(), 0, 0, INTER_LANCZOS4);
         input = output;
-    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << endl; }
+    } catch (int e) { qDebug() << "An exception occurred. Exception Nr. " << e << Qt::endl; }
     return input;
 }
