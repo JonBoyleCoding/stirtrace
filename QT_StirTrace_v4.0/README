@@ -1,0 +1,35 @@
+QT_StirTrace
+
+Mario Hildebrandt, Jana Dittmann
+Research Group Multimedia and Security
+Department of Computer Science
+Research Group Multimedia and Security
+Institute of Technical and Business Information Systems
+Otto-von-Guericke-University of Magdeburg
+2014-2017
+
+QT_StirTrace (hereafter called StirTrace in accordance to M. Hildebrandt and J. Dittmann, "From StirMark to StirTrace: Benchmarking Pattern
+Recognition Based Printed Fingerprint Detection", in Proc. of IH&MMSec’14, June 11–13, 2014, Salzburg, Austria, http://dx.doi.org/10.1145/2600918.2600926, if you are using StirTrace functions for your experiments, please include the  citation in your resulting publication) is an image manipulation tool for images of forensic traces. StirTrace is motivated by the StirMark framework for benchmarking digitial watermarks.
+The primary feature of StirTrace is the intentional distortion of images to evaluate different processing techniques for forensic applications. The image manipulation techniques are intended to simulate different printer influences during the creation of printed fingerprints, e.g. within evaluations of forensic techniques. The software is built based on the OpenCV library and thus, supports a broad variety of image formats. Furthermore, grayscale bit depths up to 32bpp are supported internally to support various sensor data.
+
+StirTrace is research software only. It is distributed as is and WITHOUT ANY WARRANTY. It is licensed under the terms and conditions of the GNU GENERAL PUBLIC LICENSE (GPL) Version 3. No author or distributor accepts responsibility to anyone for the consequences of using it or for whether it serves any particular purpose or works at all.
+
+The work in the paper related to StirTrace has been funded in part by the German Federal Ministry of Education and Research (BMBF) through the Research Program under Contract No. FKZ: 13N10818.
+
+Version 3.0
+===========
+Addition of the tilting simulation (gradients in X and Y direction as well as a static shift of values). If you are using this function, please include the following citation in your publication as well:
+M. Hildebrandt and J. Dittmann, "StirTraceV3.0 and printed fingerprint detection: Simulation of acquisition condition tilting and its impact to latent fingerprint detection feature spaces for crime scene forgeries," 2016 4th International Conference on Biometrics and Forensics (IWBF), Limassol, 2016, pp. 1-6.
+doi: 10.1109/IWBF.2016.7449695
+
+A major addition is the inclusion of internal pre-processing and evaluation interfaces. This allows you to process the modified images without the need of storing them to your hard disk drive. The code for extracting the features for detecting printed fingerprints as used in the above mentioned paper is included as an example. The achieved performance boost is significant due to the significantly reduced amount of IO-operations to the hard disk drive.
+
+Version 4.0
+===========
+Addition of face biometrics related/motivated processing functions: double scaling and passport scaling (including face detection and cropping). If you are using one of those functions for your experiments, please include the following citation in your resulting publication:
+M. Hildebrandt, T. Neubert, A. Makrushin, J. Dittmann, "Benchmarking Face Morphing Forgery Detection: Application of StirTrace for Impact Simulation of Different Processing Steps", to appear in 2017 5th International Conference on Biometrics and Forensics (IWBF), Coventry, 2017.
+
+The work related to StirTrace applications to face biometrics has been funded in part by the German Federal Ministry of Education and Research (BMBF) through the Research Program ANANAS under Contract No.FKZ: 16KIS0509K.
+
+Bugfix: Swapped image width and height during the writing of binary files
+ToDo: GUI needs to be updated to support the additional processing functions, currently only the command line interface supports all features
