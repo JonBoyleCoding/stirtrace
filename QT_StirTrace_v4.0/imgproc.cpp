@@ -1,6 +1,7 @@
 #include "imgproc.h"
 #include "evaluation.h"
 #include "filehandler.h"
+#include "indicators.hpp"
 #include "preprocessing.h"
 #include <QDebug>
 #include <QDir>
@@ -964,15 +965,39 @@ void imgproc::processMat(QString filename, QString filepath) {
 void imgproc::startProcessing() {
     QDir dir = QDir(path);
     QStringList files = dir.entryList(QDir::Files, QDir::Name);
+
+    using namespace indicators;
+
+    indicators::ProgressBar bar{option::Start{" ["},
+                                option::Fill{"█"},
+                                option::Lead{"█"},
+                                option::Remainder{"-"},
+                                option::End{"]"},
+                                option::PrefixText{"Processing Images:"},
+                                option::MaxProgress(files.count()),
+                                option::ShowPercentage{true},
+                                option::BarWidth{10},
+                                option::ForegroundColor{Color::yellow},
+                                option::ShowElapsedTime{true},
+                                option::ShowRemainingTime{true},
+                                option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}};
+
+    show_console_cursor(false);
+
     if (this->EvalMode == "") {
         for (int i = 0; i < files.count(); i++) {
             processMat(files[i], path);
+            bar.tick();
         }
     } else {
         for (int i = 0; i < files.count(); i++) {
             evaluateFile(files[i], path);
+            bar.tick();
         }
     }
+
+    bar.mark_as_completed();
+    show_console_cursor(true);
 }
 
 void imgproc::processMatCombined(QString filename, QString filepath) {
@@ -1269,9 +1294,31 @@ void imgproc::startCombinedProcessing() {
     QDir dir = QDir(path);
     QStringList files = dir.entryList(QDir::Files, QDir::Name);
 
+    using namespace indicators;
+
+    indicators::ProgressBar bar{option::Start{" ["},
+                                option::Fill{"█"},
+                                option::Lead{"█"},
+                                option::Remainder{"-"},
+                                option::End{"]"},
+                                option::PrefixText{"Processing Images:"},
+                                option::MaxProgress(files.count()),
+                                option::ShowPercentage{true},
+                                option::BarWidth{10},
+                                option::ForegroundColor{Color::yellow},
+                                option::ShowElapsedTime{true},
+                                option::ShowRemainingTime{true},
+                                option::FontStyles{std::vector<FontStyle>{FontStyle::bold}}};
+
+    show_console_cursor(false);
+
     for (int i = 0; i < files.count(); i++) {
         processMatCombined(files[i], path);
+        bar.tick();
     }
+
+    bar.mark_as_completed();
+    show_console_cursor(true);
 }
 
 // white noise generation
