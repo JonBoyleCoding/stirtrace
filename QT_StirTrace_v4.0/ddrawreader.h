@@ -2,16 +2,16 @@
 #define DDRAWREADER_H
 #include "IBinaryFileReader.h"
 
-class DDRawReader: public IBinaryFileReader
-{
-public:
+class DDRawReader : public IBinaryFileReader {
+  public:
     DDRawReader();
     bool readData(QString file);
     cv::Mat getImage(QString ImageType);
     QStringList getTypes();
     double getScale();
     long getTime();
-private:
+
+  private:
     static double scale;
     static long time;
     QStringList imageTypes;

@@ -7,20 +7,19 @@ namespace Ui {
 class MainWindow;
 }
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
-    
-public:
+
+  public:
     explicit MainWindow(QWidget *parent = 0);
     explicit MainWindow(QStringList args, QWidget *parent = 0);
     ~MainWindow();
 
-public slots:
+  public slots:
     void slotStartProcessing();
     void showFolderBrowser();
-    
-private:
+
+  private:
     Ui::MainWindow *ui;
 };
 

@@ -1,13 +1,12 @@
 #ifndef IBINARYFILEREADER_H
 #define IBINARYFILEREADER_H
 #include <opencv2/core/core.hpp>
-#include <qt4/Qt/qstringlist.h>
 #include <qt4/Qt/qstring.h>
+#include <qt4/Qt/qstringlist.h>
 #include <vector>
 
-class IBinaryFileReader
-{
-public:
+class IBinaryFileReader {
+  public:
     IBinaryFileReader() {}
     virtual bool readData(QString file) {
         return true;
@@ -21,7 +20,8 @@ public:
 
     virtual double getScale() = 0;
     virtual long getTime() = 0;
-private:
+
+  private:
     QStringList imageTypes;
     std::vector<cv::Mat> images;
 };

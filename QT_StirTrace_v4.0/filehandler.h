@@ -5,18 +5,19 @@
 #include <opencv2/core/core.hpp>
 #include <vector>
 
-class fileHandler
-{
-public:
+class fileHandler {
+  public:
     fileHandler();
     int openFile(QString filename);
     cv::Mat getImage(QString imageType);
     QStringList getImageTypes();
     void saveFile(QString BaseFilename, cv::Mat image); // this function expects the filename without the file extension
-    void saveFile(QString BaseFilename, cv::Mat image, QString imageType); // this function expects the filename without the file extension
+    void saveFile(QString BaseFilename, cv::Mat image,
+                  QString imageType); // this function expects the filename without the file extension
     QString getBaseFileName();
     double getScale();
-private:
+
+  private:
     static bool rawData;
     static QString fileExt;
     static QString inputFile;

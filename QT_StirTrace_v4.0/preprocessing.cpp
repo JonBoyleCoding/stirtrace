@@ -1,12 +1,10 @@
 #include "preprocessing.h"
 
-preprocessing::preprocessing()
-{
-}
+preprocessing::preprocessing() {}
 
 bool preprocessing::setMode(QString PreProcessMode) {
-    if (this->PreprocessingModes.indexOf(PreProcessMode)>0) {
-        this->PreprocessingMode=PreProcessMode;
+    if (this->PreprocessingModes.indexOf(PreProcessMode) > 0) {
+        this->PreprocessingMode = PreProcessMode;
         return true;
     }
     return false;

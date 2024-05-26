@@ -1,0 +1,10 @@
+BasedOnStyle: Microsoft
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Empty
+AlignAfterOpenBracket: Align
+BreakBeforeBraces: Attach
+BraceWrapping:
+	SplitEmptyFunction: False
+TabWidth: 4
+

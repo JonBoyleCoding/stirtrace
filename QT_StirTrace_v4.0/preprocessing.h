@@ -1,17 +1,17 @@
 #ifndef PREPROCESSING_H
 #define PREPROCESSING_H
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <qt4/Qt/qstring.h>
 #include <qt4/Qt/qstringlist.h>
 
-class preprocessing
-{
-private:
+class preprocessing {
+  private:
     QString PreprocessingMode;
     QStringList PreprocessingModes;
-public:
+
+  public:
     preprocessing();
     bool setMode(QString PreProcessMode);
     QStringList getModes();
