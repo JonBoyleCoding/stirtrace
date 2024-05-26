@@ -1,12 +1,18 @@
 {
-  inputs.nixpkgs.url = "github:nixos/nixpkgs";
+  inputs = {
+	nixpkgs.url = "github:nixos/nixpkgs";
+	nix-github-actions.url = "github:nix-community/nix-github-actions";
+	nix-github-actions.inputs.nixpkgs.follows = "nixpkgs";
+  };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, nix-github-actions }:
   let
     pkgs = nixpkgs.legacyPackages.x86_64-linux;
   in {
 
     packages.x86_64-linux.default = pkgs.qt6Packages.callPackage ./build.nix {};
+
+	githubActions = nix-github-actions.lib.mkGithubMatrix { checks = self.packages; };
 
     devShells.x86_64-linux.default = pkgs.mkShell {
       inputsFrom = [ self.packages.x86_64-linux.default ];
