@@ -8,9 +8,16 @@
   outputs = { self, nixpkgs, nix-github-actions }:
   let
     pkgs = nixpkgs.legacyPackages.x86_64-linux;
+
+	gui_package = pkgs.qt6Packages.callPackage ./build.nix {};
+	no_gui_package = pkgs.qt6Packages.callPackage ./build-nogui.nix {};
   in {
 
-    packages.x86_64-linux.default = pkgs.qt6Packages.callPackage ./build.nix {};
+    packages.x86_64-linux = {
+		gui = gui_package;
+		terminal = no_gui_package;
+		default = gui_package;
+	};
 
 	githubActions = nix-github-actions.lib.mkGithubMatrix { checks = self.packages; };
 
@@ -29,7 +36,7 @@
       shellHook = ''
         bashdir=$(mktemp -d)
         makeWrapper "$(type -p bash)" "$bashdir/bash" "''${qtWrapperArgs[@]}"
-        exec "$bashdir/bash"
+        # exec "$bashdir/bash"
       '';
     };
   };
