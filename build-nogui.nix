@@ -23,10 +23,13 @@ stdenv.mkDerivation {
     wrapQtAppsHook
   ];
 
+  patches = [
+	./terminal.patch
+  ];
+
   patchPhase = ''
     substituteInPlace main.cpp \
 	  --replace "/home/mhilde/src/QT_StirTrace/haarcascade_frontalface_default.xml" "$out/share/haarcascade_frontalface_default.xml" \
-	  --replace "bool useGUI = true;" "bool useGUI = false;"
   '';
 
   # If the CMakeLists.txt has an install step, this installPhase is not needed.
