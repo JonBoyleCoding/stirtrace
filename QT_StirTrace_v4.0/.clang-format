@@ -7,4 +7,4 @@ BreakBeforeBraces: Attach
 BraceWrapping:
 	SplitEmptyFunction: False
 TabWidth: 4
-
+ContinuationIndentWidth: 2

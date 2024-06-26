@@ -1,3 +1,4 @@
+#include "cxxopts.hpp"
 #include "evaluation.h"
 #include "imgproc.h"
 #include "mainwindow.h"
@@ -50,124 +51,175 @@ int main(int argc, char *argv[]) {
     QString passportscaling = "";
     QString haarcascade = "/home/mhilde/src/QT_StirTrace/haarcascade_frontalface_default.xml";
 
-    validCMDLineSwitches << "-n"
-                         << "-m"
-                         << "-l"
-                         << "-c"
-                         << "-r"
-                         << "-x"
-                         << "-y"
-                         << "-s"
-                         << "-o"
-                         << "-a"
-                         << "-b"
-                         << "-h"
-                         << "-d"
-                         << "-p"
-                         << "-e"
-                         << "-t"
-                         << "-g"
-                         << "-8"
-                         << "--eval"
-                         << "--preprocess"
-                         << "-f"
-                         << "-i"
-                         << "--baseline"
-                         << "--passport"
-                         << "--doublescale"
-                         << "--haarcascade";
+    cxxopts::Options options(
+      "StirTrace", "QT_StirTrace command line interface help (if multiple options for argument, separate by ',')");
 
-    QApplication a(argc, argv, useGUI);
-    for (int i = 0; i < a.arguments().size(); i++) {
-        // printf("[%d] %s\n",i, argv[i]);
-        switch (validCMDLineSwitches.indexOf(a.arguments().at(i))) {
-        case 0: NoiseLevels = a.arguments().at(++i); break;
-        case 1: MedianFilters = a.arguments().at(++i); break;
-        case 2: LineRemoval = a.arguments().at(++i); break;
-        case 3: ColumnRemoval = a.arguments().at(++i); break;
-        case 4: RotAngles = a.arguments().at(++i); break;
-        case 5: XStretchFactors = a.arguments().at(++i); break;
-        case 6: YShearFactors = a.arguments().at(++i); break;
-        case 7: ScaleFactors = a.arguments().at(++i); break;
-        case 8: CropFactors = a.arguments().at(++i); break;
-        case 9: BandingFrequency = a.arguments().at(++i); break;
-        case 10: batchMode = true; break;
-        case 11:
-            batchMode = true;
-            showCMDLineHelp = true;
-            break;
-        case 12: FilePath = a.arguments().at(++i); break;
-        case 13: SaltAndPepper = a.arguments().at(++i); break;
-        case 14: SubstrateFile = a.arguments().at(++i); break;
-        case 15: combineMode = true; break;
-        case 16: GaussianNoise = a.arguments().at(++i); break;
-        case 17: eightBitConversion = true; break;
-        case 18: EvalMode = a.arguments().at(++i); break;
-        case 19: PreProcessMode = a.arguments().at(++i); break;
-        case 20: ShiftParams = a.arguments().at(++i); break;
-        case 21: TiltParams = a.arguments().at(++i); break;
-        case 22: baseline = true; break;
-        case 23:
-            passportscaling = a.arguments().at(++i);
-            ;
-            break;
-        case 24: DoubleScalingFactors = a.arguments().at(++i); break;
-        case 25: haarcascade = a.arguments().at(++i); break;
-        default: break;
-        }
+    options.add_options()
+
+      ("d", "Path of files to process", cxxopts::value<std::string>())
+
+        ("n", "Additive White Noise", cxxopts::value<std::string>())
+
+          ("m", "Median Cut Filtering", cxxopts::value<std::string>())
+
+            ("l", "Removal of Lines", cxxopts::value<std::string>())
+
+              ("c", "Removal of Columns", cxxopts::value<std::string>())
+
+                ("r", "Rotation", cxxopts::value<std::string>())
+
+                  ("x", "Stretching in X Direction", cxxopts::value<std::string>())
+
+                    ("y", "Shearing in Y Direction", cxxopts::value<std::string>())
+
+                      ("s", "Scaling", cxxopts::value<std::string>())
+
+                        ("o", "Cropping", cxxopts::value<std::string>())
+
+                          ("a", "Banding Artifacts", cxxopts::value<std::string>())
+
+                            ("p", "Salt and Pepper Noise", cxxopts::value<std::string>())
+
+                              ("f", "Shift Values, e.g. to simulate a different parameterization",
+                               cxxopts::value<std::string>())
+
+                                ("i", "Tilt Simulation, specify planes as triplets A#B#C,...",
+                                 cxxopts::value<std::string>())
+
+                                  ("8", "convert data to 8 bit range")
+
+                                    ("e", "Embed Trace on Substrate", cxxopts::value<std::string>())
+
+                                      ("t", "Combine Filtering Techniques")
+
+                                        ("eval",
+                                         std::string("Perform Evaluation, modes: ") +
+                                           validEvalModes.toUtf8().constData(),
+                                         cxxopts::value<std::string>())
+
+                                          ("preprocess",
+                                           std::string("Perform a Preprocessing, modes: ") +
+                                             validPreProcModes.toUtf8().constData(),
+                                           cxxopts::value<std::string>())
+
+                                            ("baseline", "Determine Baseline Performance")
+
+                                              ("passport",
+                                               "Enable Passport Scaling, specify "
+                                               "parameters by WIDTHxHEIGHT",
+                                               cxxopts::value<std::string>())
+
+                                                ("doublescale",
+                                                 "Scaling to scaling parameter(s) "
+                                                 "and back to original size",
+                                                 cxxopts::value<std::string>())
+
+                                                  ("haarcascade",
+                                                   "Full path pointing to the "
+                                                   "OpenCV Haar Cascade to be "
+                                                   "used",
+                                                   cxxopts::value<std::string>())
+
+                                                    ("h,help", "Show this help message");
+
+    auto arguments = options.parse(argc, argv);
+
+    if (arguments.count("help")) {
+        printf("%s\n", options.help().c_str());
+        return 0;
     }
+
+    if (arguments.count("d")) {
+        FilePath = QString::fromStdString(arguments["d"].as<std::string>());
+    }
+
+    if (arguments.count("n")) {
+        NoiseLevels = QString::fromStdString(arguments["n"].as<std::string>());
+    }
+    if (arguments.count("m")) {
+        MedianFilters = QString::fromStdString(arguments["m"].as<std::string>());
+    }
+    if (arguments.count("l")) {
+        LineRemoval = QString::fromStdString(arguments["l"].as<std::string>());
+    }
+    if (arguments.count("c")) {
+        ColumnRemoval = QString::fromStdString(arguments["c"].as<std::string>());
+    }
+    if (arguments.count("r")) {
+        RotAngles = QString::fromStdString(arguments["r"].as<std::string>());
+    }
+    if (arguments.count("x")) {
+        XStretchFactors = QString::fromStdString(arguments["x"].as<std::string>());
+    }
+    if (arguments.count("y")) {
+        YShearFactors = QString::fromStdString(arguments["y"].as<std::string>());
+    }
+    if (arguments.count("s")) {
+        ScaleFactors = QString::fromStdString(arguments["s"].as<std::string>());
+    }
+    if (arguments.count("o")) {
+        CropFactors = QString::fromStdString(arguments["o"].as<std::string>());
+    }
+    if (arguments.count("a")) {
+        BandingFrequency = QString::fromStdString(arguments["a"].as<std::string>());
+    }
+    if (arguments.count("p")) {
+        SaltAndPepper = QString::fromStdString(arguments["p"].as<std::string>());
+    }
+    if (arguments.count("f")) {
+        ShiftParams = QString::fromStdString(arguments["f"].as<std::string>());
+    }
+    if (arguments.count("i")) {
+        TiltParams = QString::fromStdString(arguments["i"].as<std::string>());
+    }
+    if (arguments.count("8")) {
+        eightBitConversion = true;
+    }
+    if (arguments.count("e")) {
+        SubstrateFile = QString::fromStdString(arguments["e"].as<std::string>());
+    }
+    if (arguments.count("t")) {
+        combineMode = true;
+    }
+    if (arguments.count("eval")) {
+        EvalMode = QString::fromStdString(arguments["eval"].as<std::string>());
+    }
+    if (arguments.count("preprocess")) {
+        PreProcessMode = QString::fromStdString(arguments["preprocess"].as<std::string>());
+    }
+    if (arguments.count("baseline")) {
+        baseline = true;
+    }
+    if (arguments.count("passport")) {
+        passportscaling = QString::fromStdString(arguments["passport"].as<std::string>());
+    }
+    if (arguments.count("doublescale")) {
+        DoubleScalingFactors = QString::fromStdString(arguments["doublescale"].as<std::string>());
+    }
+    if (arguments.count("haarcascade")) {
+        haarcascade = QString::fromStdString(arguments["haarcascade"].as<std::string>());
+    }
+
     if ((batchMode) || (!useGUI)) {
-        if ((showCMDLineHelp) || (a.arguments().size() < 3)) {
-            printf("QT_StirTrace command line interface help\n\n");
-            printf("Usage: %s [options]\n\n", argv[0]);
-            printf("Options:\n");
-            printf("-h\tshow this help screen\n");
-            printf("-b\tenter non-interactive mode\n");
-            printf("-d [path]\tpath of files to process\n");
-            printf("-n parameters\t Additive White Noise\n");
-            printf("-g parameters\t Additive Gaussian Noise (µ=0)\n");
-            printf("-m parameters\t Median Cut Filtering\n");
-            printf("-l parameters\t Removal of Lines\n");
-            printf("-c parameters\t Removal of Columns\n");
-            printf("-r parameters\t Rotation\n");
-            printf("-x parameters\t Stretching in X Direction\n");
-            printf("-y parameters\t Shearing in Y Direction\n");
-            printf("-s parameters\t Scaling\n");
-            printf("-o parameters\t Cropping\n");
-            printf("-a parameters\t Banding Artifacts\n");
-            printf("-p parameters\t Salt and Pepper Noise\n");
-            printf("-f parameters\t Shift Values, e.g. to simulate a different parameterization\n");
-            printf("-i parameters\t Tilt Simulation, specify planes as triplets A#B#C,...\n");
-            printf("-8 convert data to 8 bit range\n");
-            printf("-e filename\t Embed Trace on Substrate\n");
-            printf("-t\t Combine Filtering Techniques\n");
-            printf("--eval evalMethod\t Perform Evaluation, modes: %s\n", validEvalModes.toUtf8().constData());
-            printf("--preprocess PreprocessingMethod\t Perform a Preprocessing, modes: %s\n",
-                   validPreProcModes.toUtf8().constData());
-            printf("--baseline\t Determine Baseline Performance\n");
-            printf("--passport parameters\t Enable Passport Scaling, specify parameters by WIDTHxHEIGHT\n");
-            printf("--doublescale parameters\t Scaling to scaling parameter(s) and back to original size\n");
-            printf("--haarcascade filename\t Full path pointing to the OpenCV Haar Cascade to be used\n");
-        } else {
-            QFileInfo FI = QFileInfo(FilePath);
-            if (FI.isDir()) {
-                imgproc *processing = new imgproc(FilePath, NoiseLevels, MedianFilters, LineRemoval, ColumnRemoval,
-                                                  RotAngles, XStretchFactors, YShearFactors, ScaleFactors, CropFactors,
-                                                  BandingFrequency, SaltAndPepper, GaussianNoise, SubstrateFile,
-                                                  eightBitConversion, EvalMode, PreProcessMode, ShiftParams, TiltParams,
-                                                  baseline, passportscaling, haarcascade, DoubleScalingFactors);
-                if (!combineMode)
-                    processing->startProcessing();
-                else {
-                    processing->startCombinedProcessing();
-                }
-            } else {
-                printf("error: [%s] is not a valid directory\n", FilePath.toUtf8().constData());
-                return 1;
+        QFileInfo FI = QFileInfo(FilePath);
+        if (FI.isDir()) {
+            imgproc *processing =
+              new imgproc(FilePath, NoiseLevels, MedianFilters, LineRemoval, ColumnRemoval, RotAngles, XStretchFactors,
+                          YShearFactors, ScaleFactors, CropFactors, BandingFrequency, SaltAndPepper, GaussianNoise,
+                          SubstrateFile, eightBitConversion, EvalMode, PreProcessMode, ShiftParams, TiltParams,
+                          baseline, passportscaling, haarcascade, DoubleScalingFactors);
+            if (!combineMode)
+                processing->startProcessing();
+            else {
+                processing->startCombinedProcessing();
             }
+        } else {
+            printf("error: [%s] is not a valid directory\n", FilePath.toUtf8().constData());
+            return 1;
         }
         return 0;
     } else {
+        QApplication a(argc, argv, useGUI);
         MainWindow w(a.arguments());
         w.show();
 
