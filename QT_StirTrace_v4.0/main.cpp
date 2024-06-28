@@ -58,71 +58,73 @@ int main(int argc, char *argv[]) {
 
       ("d", "Path of files to process", cxxopts::value<std::string>())
 
-        ("n", "Additive White Noise", cxxopts::value<std::string>())
+        ("b", "Non-interactive Batch Mode")
 
-          ("g", "Additive Gaussian Noise (µ=0)", cxxopts::value<std::string>())
+          ("n", "Additive White Noise", cxxopts::value<std::string>())
 
-            ("p", "Salt and Pepper Noise", cxxopts::value<std::string>())
+            ("g", "Additive Gaussian Noise (µ=0)", cxxopts::value<std::string>())
 
-              ("m", "Median Cut Filtering", cxxopts::value<std::string>())
+              ("p", "Salt and Pepper Noise", cxxopts::value<std::string>())
 
-                ("l", "Removal of Lines", cxxopts::value<std::string>())
+                ("m", "Median Cut Filtering", cxxopts::value<std::string>())
 
-                  ("c", "Removal of Columns", cxxopts::value<std::string>())
+                  ("l", "Removal of Lines", cxxopts::value<std::string>())
 
-                    ("r", "Rotation", cxxopts::value<std::string>())
+                    ("c", "Removal of Columns", cxxopts::value<std::string>())
 
-                      ("x", "Stretching in X Direction", cxxopts::value<std::string>())
+                      ("r", "Rotation", cxxopts::value<std::string>())
 
-                        ("y", "Shearing in Y Direction", cxxopts::value<std::string>())
+                        ("x", "Stretching in X Direction", cxxopts::value<std::string>())
 
-                          ("s", "Scaling", cxxopts::value<std::string>())
+                          ("y", "Shearing in Y Direction", cxxopts::value<std::string>())
 
-                            ("o", "Cropping", cxxopts::value<std::string>())
+                            ("s", "Scaling", cxxopts::value<std::string>())
 
-                              ("a", "Banding Artifacts", cxxopts::value<std::string>())
+                              ("o", "Cropping", cxxopts::value<std::string>())
 
-                                ("f", "Shift Values, e.g. to simulate a different parameterization",
-                                 cxxopts::value<std::string>())
+                                ("a", "Banding Artifacts", cxxopts::value<std::string>())
 
-                                  ("i", "Tilt Simulation, specify planes as triplets A#B#C,...",
+                                  ("f", "Shift Values, e.g. to simulate a different parameterization",
                                    cxxopts::value<std::string>())
 
-                                    ("8", "convert data to 8 bit range")
+                                    ("i", "Tilt Simulation, specify planes as triplets A#B#C,...",
+                                     cxxopts::value<std::string>())
 
-                                      ("e", "Embed Trace on Substrate", cxxopts::value<std::string>())
+                                      ("8", "convert data to 8 bit range")
 
-                                        ("t", "Combine Filtering Techniques")
+                                        ("e", "Embed Trace on Substrate", cxxopts::value<std::string>())
 
-                                          ("eval",
-                                           std::string("Perform Evaluation, modes: ") +
-                                             validEvalModes.toUtf8().constData(),
-                                           cxxopts::value<std::string>())
+                                          ("t", "Combine Filtering Techniques")
 
-                                            ("preprocess",
-                                             std::string("Perform a Preprocessing, modes: ") +
-                                               validPreProcModes.toUtf8().constData(),
+                                            ("eval",
+                                             std::string("Perform Evaluation, modes: ") +
+                                               validEvalModes.toUtf8().constData(),
                                              cxxopts::value<std::string>())
 
-                                              ("baseline", "Determine Baseline Performance")
+                                              ("preprocess",
+                                               std::string("Perform a Preprocessing, modes: ") +
+                                                 validPreProcModes.toUtf8().constData(),
+                                               cxxopts::value<std::string>())
 
-                                                ("passport",
-                                                 "Enable Passport Scaling, specify "
-                                                 "parameters by WIDTHxHEIGHT",
-                                                 cxxopts::value<std::string>())
+                                                ("baseline", "Determine Baseline Performance")
 
-                                                  ("doublescale",
-                                                   "Scaling to scaling parameter(s) "
-                                                   "and back to original size",
+                                                  ("passport",
+                                                   "Enable Passport Scaling, specify "
+                                                   "parameters by WIDTHxHEIGHT",
                                                    cxxopts::value<std::string>())
 
-                                                    ("haarcascade",
-                                                     "Full path pointing to the "
-                                                     "OpenCV Haar Cascade to be "
-                                                     "used",
+                                                    ("doublescale",
+                                                     "Scaling to scaling parameter(s) "
+                                                     "and back to original size",
                                                      cxxopts::value<std::string>())
 
-                                                      ("h,help", "Show this help message");
+                                                      ("haarcascade",
+                                                       "Full path pointing to the "
+                                                       "OpenCV Haar Cascade to be "
+                                                       "used",
+                                                       cxxopts::value<std::string>())
+
+                                                        ("h,help", "Show this help message");
 
     auto arguments = options.parse(argc, argv);
 
@@ -133,6 +135,9 @@ int main(int argc, char *argv[]) {
 
     if (arguments.count("d")) {
         FilePath = QString::fromStdString(arguments["d"].as<std::string>());
+    }
+    if (arguments.count("b")) {
+        batchMode = true;
     }
 
     if (arguments.count("n")) {
