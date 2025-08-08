@@ -1,0 +1,374 @@
+name: Windows Release Build
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        build_type: [gui, nogui]
+        include:
+          - build_type: gui
+            artifact_suffix: "gui"
+          - build_type: nogui
+            artifact_suffix: "nogui"
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.3'
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64'
+        cache: true
+    
+    - name: Cache OpenCV 2
+      id: cache-opencv
+      uses: actions/cache@v3
+      with:
+        path: C:\opencv2
+        key: opencv-2.4.13-windows-x64-prebuilt
+    
+    - name: Install OpenCV 2 (pre-built)
+      if: steps.cache-opencv.outputs.cache-hit != 'true'
+      run: |
+        # Use correct version 2.4.13.6 from SourceForge
+        $opencvUrl = "https://downloads.sourceforge.net/project/opencvlibrary/opencv-win/2.4.13/opencv-2.4.13.6-vc14.exe"
+        $opencvInstaller = "opencv-2.4.13.6.exe"
+        
+        Write-Host "Downloading OpenCV 2.4.13.6 pre-built binaries..."
+        # Use curl for more reliable downloads
+        curl -L -o $opencvInstaller $opencvUrl
+        
+        Write-Host "File size: $((Get-Item $opencvInstaller).Length / 1MB) MB"
+        
+        Write-Host "Extracting OpenCV..."
+        # Try 7z first (self-extracting exes are often 7z archives)
+        Write-Host "Trying 7z extraction..."
+        7z x $opencvInstaller -oC:\opencv2 -y
+        
+        # If that didn't work, try the self-extracting exe
+        if (-not (Test-Path "C:\opencv2") -and -not (Test-Path "C:\opencv")) {
+          Write-Host "7z failed, trying self-extracting exe..."
+          & "./$($opencvInstaller)" -o"C:\" -y
+        }
+        
+        # Check if extraction worked
+        if (Test-Path "C:\opencv2") {
+          Write-Host "Successfully extracted to C:\opencv2"
+        } elseif (Test-Path "C:\opencv") {
+          Write-Host "Successfully extracted to C:\opencv, renaming to opencv2"
+          Rename-Item -Path "C:\opencv" -NewName "opencv2"
+        } else {
+          Write-Host "ERROR: Extraction failed!"
+          Write-Host "Listing C:\ contents:"
+          Get-ChildItem -Path "C:\" -Directory | Select-Object -First 20 | ForEach-Object { Write-Host $_.FullName }
+          throw "Failed to extract OpenCV"
+        }
+    
+    - name: Create OpenCV CMake Config
+      run: |
+        # OpenCV 2.4.13 pre-built binaries don't include CMake config files
+        # Create a custom OpenCVConfig.cmake to bridge this gap
+        
+        # OpenCV 2.4.13 extracted to C:\opencv2\opencv\ structure
+        # OpenCV 2.4.13.6-vc14.exe extracts to opencv/ subdirectory
+        # Use the known structure: C:\opencv2\opencv\build\x64\vc14\
+        $opencvLibDir = "C:/opencv2/opencv/build/x64/vc14/lib"
+        $opencvBinDir = "C:/opencv2/opencv/build/x64/vc14/bin"
+        $opencvBuildDir = "C:/opencv2/build"
+        
+        # Verify the library directory exists
+        if (-not (Test-Path $opencvLibDir.Replace('/', '\'))) {
+          Write-Error "Could not find OpenCV libraries at expected path: $opencvLibDir"
+          # List what we actually have for debugging
+          Write-Host "Contents of C:\opencv2:"
+          Get-ChildItem -Path "C:\opencv2" | ForEach-Object { Write-Host "  $($_.Name)" }
+          exit 1
+        }
+        
+        Write-Host "Found OpenCV libraries at: $opencvLibDir"
+        
+        # Create the OpenCVConfig.cmake file
+        $configDir = "C:\opencv2\build"
+        New-Item -ItemType Directory -Force -Path $configDir
+        
+        # Convert paths to forward slashes for CMake
+        $opencvLibDirCMake = $opencvLibDir.Replace('\', '/')
+        
+        # Write CMake config file line by line to avoid complex string manipulation
+        $configFile = "$configDir\OpenCVConfig.cmake"
+        
+        "# Custom OpenCVConfig.cmake for OpenCV 2.4.13 pre-built binaries" | Out-File -FilePath $configFile -Encoding utf8
+        "set(OpenCV_FOUND TRUE)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(OpenCV_VERSION `"2.4.13`")" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(OpenCV_VERSION_MAJOR 2)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(OpenCV_VERSION_MINOR 4)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(OpenCV_VERSION_PATCH 13)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(PACKAGE_VERSION `"2.4.13`")" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(PACKAGE_VERSION_MAJOR 2)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(PACKAGE_VERSION_MINOR 4)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(PACKAGE_VERSION_PATCH 13)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(PACKAGE_VERSION_EXACT FALSE)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(PACKAGE_VERSION_COMPATIBLE TRUE)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "# Include directories" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(OpenCV_INCLUDE_DIRS `"C:/opencv2/opencv/build/include`")" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "# Library paths" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(OpenCV_LIBS" | Out-File -FilePath $configFile -Append -Encoding utf8
+        
+        # Add library paths  
+        $libNames = @("opencv_core2413", "opencv_imgproc2413", "opencv_highgui2413", "opencv_objdetect2413", "opencv_features2d2413", "opencv_flann2413")
+        foreach ($libName in $libNames) {
+          "  `"$opencvLibDirCMake/$libName.lib`"" | Out-File -FilePath $configFile -Append -Encoding utf8
+        }
+        
+        ")" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(OpenCV_LIBRARIES `${OpenCV_LIBS})" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "# Compatibility with find_package(OpenCV 2 REQUIRED)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(OpenCV2_FOUND TRUE)" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(OpenCV2_LIBRARIES `${OpenCV_LIBRARIES})" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "set(OpenCV2_INCLUDE_DIRS `${OpenCV_INCLUDE_DIRS})" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "" | Out-File -FilePath $configFile -Append -Encoding utf8
+        "message(STATUS `"Found OpenCV: `${OpenCV_VERSION} (`${OpenCV_INCLUDE_DIRS})`")" | Out-File -FilePath $configFile -Append -Encoding utf8
+        
+        # Create OpenCVConfig-version.cmake file for proper version detection
+        $versionFile = "$configDir\OpenCVConfig-version.cmake"
+        "# OpenCVConfig-version.cmake for OpenCV 2.4.13" | Out-File -FilePath $versionFile -Encoding utf8
+        "set(PACKAGE_VERSION `"2.4.13`")" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "set(PACKAGE_VERSION_MAJOR `"2`")" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "set(PACKAGE_VERSION_MINOR `"4`")" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "set(PACKAGE_VERSION_PATCH `"13`")" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "# Check whether the requested PACKAGE_FIND_VERSION is compatible" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "if(`"`${PACKAGE_VERSION}`" VERSION_LESS `"`${PACKAGE_FIND_VERSION}`")" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "  set(PACKAGE_VERSION_COMPATIBLE FALSE)" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "else()" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "  set(PACKAGE_VERSION_COMPATIBLE TRUE)" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "  if(`"`${PACKAGE_FIND_VERSION}`" STREQUAL `"`${PACKAGE_VERSION}`")" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "    set(PACKAGE_VERSION_EXACT TRUE)" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "  endif()" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "endif()" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "# For find_package(OpenCV 2 REQUIRED) compatibility" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "if(PACKAGE_FIND_VERSION_MAJOR EQUAL 2)" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "  set(PACKAGE_VERSION_COMPATIBLE TRUE)" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        "endif()" | Out-File -FilePath $versionFile -Append -Encoding utf8
+        
+        Write-Host "Created custom OpenCVConfig.cmake at: $configDir\OpenCVConfig.cmake"
+        Write-Host "Created OpenCVConfig-version.cmake at: $configDir\OpenCVConfig-version.cmake"
+        
+        # Set environment variable for CMake to find it
+        echo "OpenCV_DIR=$configDir" >> $env:GITHUB_ENV
+    
+    - name: Patch source for NoGUI build
+      if: matrix.build_type == 'nogui'
+      run: |
+        # Patch main.cpp to disable GUI, similar to Nix build
+        $mainCppPath = "QT_StirTrace_v4.0\main.cpp"
+        $content = Get-Content $mainCppPath -Raw
+        $content = $content -replace 'bool useGUI = true;', 'bool useGUI = false;'
+        Set-Content -Path $mainCppPath -Value $content
+        Write-Host "Patched main.cpp for NoGUI build"
+    
+    - name: Configure CMake
+      run: |
+        # Configure with custom OpenCV CMake config
+        cmake -B build -S QT_StirTrace_v4.0 `
+          -G "Visual Studio 17 2022" `
+          -A x64 `
+          -DCMAKE_BUILD_TYPE=Release `
+          -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}" `
+          -DOpenCV_DIR="${{ env.OpenCV_DIR }}"
+    
+    - name: Build
+      run: cmake --build build --config Release --parallel
+    
+    - name: Copy dependencies
+      run: |
+        # Create release directory
+        New-Item -ItemType Directory -Force -Path "release"
+        
+        # Copy executable
+        Copy-Item "build\Release\stirtrace.exe" -Destination "release\"
+        
+        # Copy Haar cascade file
+        Copy-Item "QT_StirTrace_v4.0\haarcascade_frontalface_default.xml" -Destination "release\"
+        
+        # Deploy Qt dependencies for both GUI and NoGUI versions
+        # NoGUI still needs Qt Core, Network, FileSystem, etc. - just not GUI widgets
+        if ("${{ matrix.build_type }}" -eq "gui") {
+          # Full Qt deployment with GUI components
+          & "${{ env.Qt6_DIR }}\bin\windeployqt.exe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw "release\stirtrace.exe"
+        } else {
+          # NoGUI deployment - exclude GUI widgets but include core Qt libraries
+          & "${{ env.Qt6_DIR }}\bin\windeployqt.exe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw --no-quick-import --force "release\stirtrace.exe"
+        }
+        
+        # Copy OpenCV 2 DLLs - they should be in the opencv/build/x64/vc14/bin directory
+        $opencvBinPaths = @(
+          "C:\opencv2\opencv\build\x64\vc14\bin",
+          "C:\opencv2\opencv\build\x64\vc12\bin", 
+          "C:\opencv2\opencv\build\x64\vc15\bin",
+          "C:\opencv2\build\x64\vc12\bin",
+          "C:\opencv2\build\x64\vc14\bin",
+          "C:\opencv2\build\x64\vc15\bin"
+        )
+        
+        $opencvBinPath = ""
+        foreach ($path in $opencvBinPaths) {
+          if (Test-Path $path) {
+            $opencvBinPath = $path
+            Write-Host "Found OpenCV binaries at: $path"
+            break
+          }
+        }
+        
+        if ($opencvBinPath -ne "") {
+          # Copy the main OpenCV DLLs needed
+          $requiredDlls = @(
+            "opencv_core2413.dll",
+            "opencv_highgui2413.dll", 
+            "opencv_imgproc2413.dll",
+            "opencv_objdetect2413.dll",
+            "opencv_features2d2413.dll",
+            "opencv_flann2413.dll"
+          )
+          
+          foreach ($dll in $requiredDlls) {
+            $dllPath = Join-Path $opencvBinPath $dll
+            if (Test-Path $dllPath) {
+              Copy-Item $dllPath -Destination "release\"
+              Write-Host "Copied $dll"
+            }
+          }
+        } else {
+          Write-Error "Could not find OpenCV binary directory!"
+        }
+        
+        # Copy MSVC runtime (for VS2022)
+        $vsRuntime = "${env:VCToolsRedistDir}x64\Microsoft.VC143.CRT"
+        if (Test-Path $vsRuntime) {
+          Copy-Item "$vsRuntime\vcruntime140.dll" -Destination "release\" -ErrorAction SilentlyContinue
+          Copy-Item "$vsRuntime\vcruntime140_1.dll" -Destination "release\" -ErrorAction SilentlyContinue  
+          Copy-Item "$vsRuntime\msvcp140.dll" -Destination "release\" -ErrorAction SilentlyContinue
+        }
+    
+    - name: Create version info
+      run: |
+        $buildDate = Get-Date -Format "yyyyMMdd-HHmmss"
+        $shortSha = "${{ github.sha }}".Substring(0, 7)
+        $buildInfo = @"
+        StirTrace Windows Build
+        Version: 4.0
+        Build Type: ${{ matrix.build_type }}
+        Build Date: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+        Commit: ${{ github.sha }}
+        OpenCV Version: 2.4.13
+        Qt Version: 6.5.3
+        "@
+        Set-Content -Path "release\version.txt" -Value $buildInfo
+    
+    - name: Test executable
+      run: |
+        # Basic test to ensure executable runs
+        cd release
+        .\stirtrace.exe --help
+    
+    - name: Package release
+      run: |
+        $buildDate = Get-Date -Format "yyyyMMdd"
+        $shortSha = "${{ github.sha }}".Substring(0, 7)
+        $zipName = "stirtrace-windows-4.0-$buildDate-$shortSha-${{ matrix.artifact_suffix }}.zip"
+        Compress-Archive -Path "release\*" -DestinationPath $zipName
+        echo "RELEASE_FILE=$zipName" >> $env:GITHUB_ENV
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: stirtrace-windows-${{ matrix.artifact_suffix }}
+        path: ${{ env.RELEASE_FILE }}
+        retention-days: 30
+    
+  create-release:
+    needs: build-windows
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need full history for tag operations
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Delete Previous Release and Tag
+      run: |
+        # Delete the previous release if it exists
+        if gh release view "Latest Build (v4.0)" >/dev/null 2>&1; then
+          echo "Deleting previous release..."
+          gh release delete "Latest Build (v4.0)" --yes
+        else
+          echo "No previous release to delete"
+        fi
+        
+        # Delete the moving tag both locally and remotely
+        echo "Deleting latest-build tag..."
+        git tag -d latest-build 2>/dev/null || echo "No local latest-build tag"
+        git push --delete origin latest-build 2>/dev/null || echo "No remote latest-build tag"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Create Moving Tag and Release
+      run: |
+        # Create the moving tag at current commit
+        echo "Creating latest-build tag at current commit..."
+        git tag latest-build
+        git push origin latest-build
+        
+        # Create release using the moving tag
+        gh release create "latest-build" \
+          --title "Latest Build (v4.0)" \
+          --notes "## StirTrace v4.0 - Latest Windows Build
+
+        **Build Date:** ${{ github.event.head_commit.timestamp }}
+        **Commit:** ${{ github.sha }}
+
+        ### Downloads
+        - \`stirtrace-windows-*-gui.zip\` - GUI version
+        - \`stirtrace-windows-*-nogui.zip\` - Command-line version (no GUI)
+
+        ### Requirements
+        - Windows 10 or later
+        - Visual C++ Redistributable 2015-2022
+
+        This release is automatically updated with each push to the master branch." \
+          --latest \
+          artifacts/**/*.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
