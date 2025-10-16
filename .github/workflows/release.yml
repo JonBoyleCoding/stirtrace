@@ -342,9 +342,9 @@ jobs:
       uses: actions/cache@v3
       with:
         path: /usr/local
-        key: opencv-2.4.13-linux-static-v2
+        key: opencv-2.4.13-linux-static-v3
 
-    - name: Build OpenCV 2.4.13
+    - name: Build OpenCV 2.4.13 with fixes
       if: steps.cache-opencv2.outputs.cache-hit != 'true'
       run: |
         sudo apt-get install -y wget unzip libjpeg-dev libpng-dev libtiff-dev
@@ -352,6 +352,10 @@ jobs:
         wget -O opencv-2.4.13.zip https://github.com/opencv/opencv/archive/2.4.13.zip
         unzip opencv-2.4.13.zip
         cd opencv-2.4.13
+
+        # Fix CMake version compatibility issue
+        sed -i 's/CPACK_PACKAGE_VERSION_PATCH \${OPENCV_VERSION_PATCH}/CPACK_PACKAGE_VERSION_PATCH "${OPENCV_VERSION_PATCH}"/g' cmake/OpenCVPackaging.cmake
+
         mkdir build && cd build
         cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
@@ -360,8 +364,12 @@ jobs:
           -DBUILD_EXAMPLES=OFF \
           -DBUILD_TESTS=OFF \
           -DBUILD_PERF_TESTS=OFF \
+          -DBUILD_opencv_apps=OFF \
           -DWITH_JPEG=ON \
-          -DWITH_PNG=ON
+          -DWITH_PNG=ON \
+          -DWITH_GTK=OFF \
+          -DWITH_QT=OFF \
+          -DWITH_OPENGL=OFF
         make -j$(nproc)
         sudo make install
 
