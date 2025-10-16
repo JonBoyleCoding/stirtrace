@@ -1,4 +1,4 @@
-name: Windows Release Build
+name: Release Build
 
 on:
   push:
@@ -309,8 +309,98 @@ jobs:
         path: ${{ env.RELEASE_FILE }}
         retention-days: 30
     
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type: [gui, nogui]
+        include:
+          - build_type: gui
+            artifact_suffix: "gui"
+          - build_type: nogui
+            artifact_suffix: "nogui"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          qt6-base-dev \
+          qt6-base-dev-tools \
+          libopencv-dev \
+          libqt6core6 \
+          libqt6gui6 \
+          libqt6widgets6 \
+          libqt6network6 \
+          qt6-qpa-plugins
+
+    - name: Patch source for NoGUI build
+      if: matrix.build_type == 'nogui'
+      run: |
+        # Patch main.cpp to disable GUI, similar to Nix build
+        sed -i 's/bool useGUI = true;/bool useGUI = false;/g' QT_StirTrace_v4.0/main.cpp
+        echo "Patched main.cpp for NoGUI build"
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -S QT_StirTrace_v4.0 \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
+          -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" \
+          -DBUILD_SHARED_LIBS=OFF
+
+    - name: Build
+      run: cmake --build build --config Release --parallel
+
+    - name: Create release directory and copy files
+      run: |
+        mkdir -p release
+        cp build/stirtrace release/
+        cp QT_StirTrace_v4.0/haarcascade_frontalface_default.xml release/
+
+        # Strip debug symbols to reduce size
+        strip release/stirtrace
+
+    - name: Create version info
+      run: |
+        BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        cat > release/version.txt << EOF
+        StirTrace Linux Build
+        Version: 4.0
+        Build Type: ${{ matrix.build_type }}
+        Build Date: $BUILD_DATE
+        Commit: ${{ github.sha }}
+        OpenCV Version: $(pkg-config --modversion opencv4 || pkg-config --modversion opencv)
+        Qt Version: $(qmake -query QT_VERSION)
+        EOF
+
+    - name: Test executable
+      run: |
+        cd release
+        ./stirtrace --help
+
+    - name: Package release
+      run: |
+        BUILD_DATE=$(date '+%Y%m%d')
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        ZIP_NAME="stirtrace-linux-4.0-${BUILD_DATE}-${SHORT_SHA}-${{ matrix.artifact_suffix }}.tar.gz"
+        tar -czf "$ZIP_NAME" -C release .
+        echo "RELEASE_FILE=$ZIP_NAME" >> $GITHUB_ENV
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: stirtrace-linux-${{ matrix.artifact_suffix }}
+        path: ${{ env.RELEASE_FILE }}
+        retention-days: 30
+
   create-release:
-    needs: build-windows
+    needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     permissions:
@@ -354,21 +444,33 @@ jobs:
         # Create release using the moving tag
         gh release create "latest-build" \
           --title "Latest Build (v4.0)" \
-          --notes "## StirTrace v4.0 - Latest Windows Build
+          --notes "## StirTrace v4.0 - Latest Build
 
         **Build Date:** ${{ github.event.head_commit.timestamp }}
         **Commit:** ${{ github.sha }}
 
         ### Downloads
+
+        #### Windows
         - \`stirtrace-windows-*-gui.zip\` - GUI version
         - \`stirtrace-windows-*-nogui.zip\` - Command-line version (no GUI)
 
+        #### Linux
+        - \`stirtrace-linux-*-gui.tar.gz\` - GUI version
+        - \`stirtrace-linux-*-nogui.tar.gz\` - Command-line version (no GUI)
+
         ### Requirements
+
+        #### Windows
         - Windows 10 or later
         - Visual C++ Redistributable 2015-2022
 
+        #### Linux
+        - Linux x86_64
+        - Qt6 and OpenCV libraries (may need to be installed separately if not statically linked)
+
         This release is automatically updated with each push to the master branch." \
           --latest \
-          artifacts/**/*.zip
+          artifacts/**/*.zip artifacts/**/*.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
