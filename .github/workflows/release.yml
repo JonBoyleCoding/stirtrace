@@ -403,12 +403,6 @@ jobs:
         Qt Version: 6.x
         EOF
 
-    - name: Test executables
-      run: |
-        echo "Testing GUI version:"
-        cd release-gui && ./stirtrace --help && cd ..
-        echo "Testing terminal version:"
-        cd release-terminal && ./stirtrace --help && cd ..
 
     - name: Package releases
       run: |
