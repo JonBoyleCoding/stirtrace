@@ -334,11 +334,27 @@ jobs:
       run: |
         mkdir -p release
 
-        # Copy bundled binary
-        cp stirtrace release/
+        # Find and copy bundled binary (nix bundle creates different output names)
+        echo "Looking for bundled binary files:"
+        ls -la
 
-        # Copy haarcascade file (build regular package to get this file)
-        nix build -L ".#${{ matrix.nix_target }}"
+        # Copy bundled binary (could be various names)
+        if [ -f "stirtrace" ]; then
+          cp stirtrace release/
+        elif [ -f "stirtrace-*" ]; then
+          cp stirtrace-* release/stirtrace
+        elif [ -f "result" ]; then
+          cp result release/stirtrace
+        else
+          echo "Bundled binary not found, using regular build"
+          nix build -L ".#${{ matrix.nix_target }}"
+          cp result/bin/stirtrace release/
+        fi
+
+        # Copy haarcascade file (build regular package to get this file if not already built)
+        if [ ! -d "result" ]; then
+          nix build -L ".#${{ matrix.nix_target }}"
+        fi
         cp result/share/haarcascade_frontalface_default.xml release/
 
     - name: Create version info
