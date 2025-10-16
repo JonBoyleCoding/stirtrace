@@ -328,12 +328,19 @@ jobs:
         echo "Files after GUI bundle:"
         ls -la
 
-        if [ ! -f "stirtrace" ]; then
-          echo "ERROR: stirtrace binary not found after GUI bundle"
+        if [ ! -f "stirtrace-arx" ]; then
+          echo "ERROR: stirtrace-arx binary not found after GUI bundle"
           ls -la
           exit 1
         fi
-        mv stirtrace stirtrace-gui
+
+        echo "Checking stirtrace-arx details:"
+        file stirtrace-arx
+        ls -la stirtrace-arx
+        readlink stirtrace-arx
+
+        # Copy the actual binary, not the symlink
+        cp stirtrace-arx stirtrace-gui
 
         # Bundle terminal version
         echo "Bundling terminal version..."
@@ -341,12 +348,19 @@ jobs:
         echo "Files after terminal bundle:"
         ls -la
 
-        if [ ! -f "stirtrace" ]; then
-          echo "ERROR: stirtrace binary not found after terminal bundle"
+        if [ ! -f "stirtrace-arx" ]; then
+          echo "ERROR: stirtrace-arx binary not found after terminal bundle"
           ls -la
           exit 1
         fi
-        mv stirtrace stirtrace-terminal
+
+        echo "Checking terminal stirtrace-arx details:"
+        file stirtrace-arx
+        ls -la stirtrace-arx
+        readlink stirtrace-arx
+
+        # Copy the actual binary, not the symlink
+        cp stirtrace-arx stirtrace-terminal
 
         # Also build regular packages to get shared files
         nix build -L ".#gui"
