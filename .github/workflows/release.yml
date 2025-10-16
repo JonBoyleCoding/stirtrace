@@ -313,11 +313,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        nix_target: [static-gui, static-terminal]
+        nix_target: [gui, terminal]
         include:
-          - nix_target: static-gui
+          - nix_target: gui
             artifact_suffix: "gui"
-          - nix_target: static-terminal
+          - nix_target: terminal
             artifact_suffix: "nogui"
 
     steps:
@@ -326,22 +326,20 @@ jobs:
     - name: Install Nix
       uses: cachix/install-nix-action@v24
 
-    - name: Build static binary with Nix
+    - name: Bundle static binary with Nix
       run: |
-        nix build -L ".#${{ matrix.nix_target }}"
+        nix bundle ".#${{ matrix.nix_target }}"
 
     - name: Create release directory and copy files
       run: |
         mkdir -p release
 
-        # Copy binary
-        cp result/bin/stirtrace release/
+        # Copy bundled binary
+        cp stirtrace release/
 
-        # Copy haarcascade file
+        # Copy haarcascade file (build regular package to get this file)
+        nix build -L ".#${{ matrix.nix_target }}"
         cp result/share/haarcascade_frontalface_default.xml release/
-
-        # Strip debug symbols to reduce size
-        strip release/stirtrace
 
     - name: Create version info
       run: |
