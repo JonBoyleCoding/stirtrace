@@ -311,14 +311,6 @@ jobs:
     
   build-linux-nix:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        nix_target: [gui, terminal]
-        include:
-          - nix_target: gui
-            artifact_suffix: "gui"
-          - nix_target: terminal
-            artifact_suffix: "nogui"
 
     steps:
     - uses: actions/checkout@v4
@@ -326,69 +318,112 @@ jobs:
     - name: Install Nix
       uses: cachix/install-nix-action@v24
 
-    - name: Bundle static binary with Nix
+    - name: Bundle static binaries with Nix
       run: |
-        nix bundle ".#${{ matrix.nix_target }}"
+        echo "Building both GUI and terminal variants..."
 
-    - name: Create release directory and copy files
-      run: |
-        mkdir -p release
-
-        # Find and copy bundled binary (nix bundle creates different output names)
-        echo "Looking for bundled binary files:"
+        # Bundle GUI version
+        echo "Bundling GUI version..."
+        nix bundle ".#gui"
+        echo "Files after GUI bundle:"
         ls -la
 
-        # Copy bundled binary (could be various names)
-        if [ -f "stirtrace" ]; then
-          cp stirtrace release/
-        elif [ -f "stirtrace-*" ]; then
-          cp stirtrace-* release/stirtrace
-        elif [ -f "result" ]; then
-          cp result release/stirtrace
-        else
-          echo "Bundled binary not found, using regular build"
-          nix build -L ".#${{ matrix.nix_target }}"
-          cp result/bin/stirtrace release/
+        if [ ! -f "stirtrace" ]; then
+          echo "ERROR: stirtrace binary not found after GUI bundle"
+          ls -la
+          exit 1
         fi
+        mv stirtrace stirtrace-gui
 
-        # Copy haarcascade file (build regular package to get this file if not already built)
-        if [ ! -d "result" ]; then
-          nix build -L ".#${{ matrix.nix_target }}"
+        # Bundle terminal version
+        echo "Bundling terminal version..."
+        nix bundle ".#terminal"
+        echo "Files after terminal bundle:"
+        ls -la
+
+        if [ ! -f "stirtrace" ]; then
+          echo "ERROR: stirtrace binary not found after terminal bundle"
+          ls -la
+          exit 1
         fi
-        cp result/share/haarcascade_frontalface_default.xml release/
+        mv stirtrace stirtrace-terminal
 
-    - name: Create version info
+        # Also build regular packages to get shared files
+        nix build -L ".#gui"
+
+    - name: Create GUI release
       run: |
+        mkdir -p release-gui
+        cp stirtrace-gui release-gui/stirtrace
+        cp result/share/haarcascade_frontalface_default.xml release-gui/
+
+        # Create version info
         BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S')
         SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-        cat > release/version.txt << EOF
+        cat > release-gui/version.txt << EOF
         StirTrace Linux Build (Nix)
         Version: 4.0
-        Build Type: ${{ matrix.artifact_suffix }}
+        Build Type: gui
         Build Date: $BUILD_DATE
         Commit: ${{ github.sha }}
         OpenCV Version: 2.4.13
         Qt Version: 6.x
         EOF
 
-    - name: Test executable
+    - name: Create terminal release
       run: |
-        cd release
-        ./stirtrace --help
+        mkdir -p release-terminal
+        cp stirtrace-terminal release-terminal/stirtrace
+        cp result/share/haarcascade_frontalface_default.xml release-terminal/
 
-    - name: Package release
+        # Create version info
+        BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        cat > release-terminal/version.txt << EOF
+        StirTrace Linux Build (Nix)
+        Version: 4.0
+        Build Type: nogui
+        Build Date: $BUILD_DATE
+        Commit: ${{ github.sha }}
+        OpenCV Version: 2.4.13
+        Qt Version: 6.x
+        EOF
+
+    - name: Test executables
+      run: |
+        echo "Testing GUI version:"
+        cd release-gui && ./stirtrace --help && cd ..
+        echo "Testing terminal version:"
+        cd release-terminal && ./stirtrace --help && cd ..
+
+    - name: Package releases
       run: |
         BUILD_DATE=$(date '+%Y%m%d')
         SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-        TAR_NAME="stirtrace-linux-4.0-${BUILD_DATE}-${SHORT_SHA}-${{ matrix.artifact_suffix }}.tar.gz"
-        tar -czf "$TAR_NAME" -C release .
-        echo "RELEASE_FILE=$TAR_NAME" >> $GITHUB_ENV
 
-    - name: Upload artifact
+        # Package GUI version
+        GUI_TAR_NAME="stirtrace-linux-4.0-${BUILD_DATE}-${SHORT_SHA}-gui.tar.gz"
+        tar -czf "$GUI_TAR_NAME" -C release-gui .
+
+        # Package terminal version
+        TERMINAL_TAR_NAME="stirtrace-linux-4.0-${BUILD_DATE}-${SHORT_SHA}-nogui.tar.gz"
+        tar -czf "$TERMINAL_TAR_NAME" -C release-terminal .
+
+        echo "GUI_RELEASE_FILE=$GUI_TAR_NAME" >> $GITHUB_ENV
+        echo "TERMINAL_RELEASE_FILE=$TERMINAL_TAR_NAME" >> $GITHUB_ENV
+
+    - name: Upload GUI artifact
       uses: actions/upload-artifact@v4
       with:
-        name: stirtrace-linux-${{ matrix.artifact_suffix }}
-        path: ${{ env.RELEASE_FILE }}
+        name: stirtrace-linux-gui
+        path: ${{ env.GUI_RELEASE_FILE }}
+        retention-days: 30
+
+    - name: Upload terminal artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: stirtrace-linux-nogui
+        path: ${{ env.TERMINAL_RELEASE_FILE }}
         retention-days: 30
 
   create-release:
