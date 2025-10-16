@@ -309,93 +309,36 @@ jobs:
         path: ${{ env.RELEASE_FILE }}
         retention-days: 30
     
-  build-linux:
+  build-linux-nix:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        build_type: [gui, nogui]
+        nix_target: [static-gui, static-terminal]
         include:
-          - build_type: gui
+          - nix_target: static-gui
             artifact_suffix: "gui"
-          - build_type: nogui
+          - nix_target: static-terminal
             artifact_suffix: "nogui"
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Install Nix
+      uses: cachix/install-nix-action@v24
+
+    - name: Build static binary with Nix
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          cmake \
-          qt6-base-dev \
-          qt6-base-dev-tools \
-          libqt6core6 \
-          libqt6gui6 \
-          libqt6widgets6 \
-          libqt6network6 \
-          qt6-qpa-plugins
-
-    - name: Cache OpenCV 2.4.13
-      id: cache-opencv2
-      uses: actions/cache@v3
-      with:
-        path: /usr/local
-        key: opencv-2.4.13-linux-static-v3
-
-    - name: Build OpenCV 2.4.13 with fixes
-      if: steps.cache-opencv2.outputs.cache-hit != 'true'
-      run: |
-        sudo apt-get install -y wget unzip libjpeg-dev libpng-dev libtiff-dev
-        cd /tmp
-        wget -O opencv-2.4.13.zip https://github.com/opencv/opencv/archive/2.4.13.zip
-        unzip opencv-2.4.13.zip
-        cd opencv-2.4.13
-
-        # Fix CMake version compatibility issue
-        sed -i 's/CPACK_PACKAGE_VERSION_PATCH \${OPENCV_VERSION_PATCH}/CPACK_PACKAGE_VERSION_PATCH "${OPENCV_VERSION_PATCH}"/g' cmake/OpenCVPackaging.cmake
-
-        mkdir build && cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=/usr/local \
-          -DBUILD_SHARED_LIBS=OFF \
-          -DBUILD_EXAMPLES=OFF \
-          -DBUILD_TESTS=OFF \
-          -DBUILD_PERF_TESTS=OFF \
-          -DBUILD_opencv_apps=OFF \
-          -DWITH_JPEG=ON \
-          -DWITH_PNG=ON \
-          -DWITH_GTK=OFF \
-          -DWITH_QT=OFF \
-          -DWITH_OPENGL=OFF
-        make -j$(nproc)
-        sudo make install
-
-    - name: Patch source for NoGUI build
-      if: matrix.build_type == 'nogui'
-      run: |
-        # Patch main.cpp to disable GUI, similar to Nix build
-        sed -i 's/bool useGUI = true;/bool useGUI = false;/g' QT_StirTrace_v4.0/main.cpp
-        echo "Patched main.cpp for NoGUI build"
-
-    - name: Configure CMake
-      run: |
-        cmake -B build -S QT_StirTrace_v4.0 \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_EXE_LINKER_FLAGS="-static -static-libgcc -static-libstdc++" \
-          -DCMAKE_FIND_LIBRARY_SUFFIXES=".a" \
-          -DBUILD_SHARED_LIBS=OFF
-
-    - name: Build
-      run: cmake --build build --config Release --parallel
+        nix build -L ".#${{ matrix.nix_target }}"
 
     - name: Create release directory and copy files
       run: |
         mkdir -p release
-        cp build/stirtrace release/
-        cp QT_StirTrace_v4.0/haarcascade_frontalface_default.xml release/
+
+        # Copy binary
+        cp result/bin/stirtrace release/
+
+        # Copy haarcascade file
+        cp result/share/haarcascade_frontalface_default.xml release/
 
         # Strip debug symbols to reduce size
         strip release/stirtrace
@@ -405,13 +348,13 @@ jobs:
         BUILD_DATE=$(date '+%Y-%m-%d %H:%M:%S')
         SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
         cat > release/version.txt << EOF
-        StirTrace Linux Build
+        StirTrace Linux Build (Nix)
         Version: 4.0
-        Build Type: ${{ matrix.build_type }}
+        Build Type: ${{ matrix.artifact_suffix }}
         Build Date: $BUILD_DATE
         Commit: ${{ github.sha }}
-        OpenCV Version: $(pkg-config --modversion opencv4 || pkg-config --modversion opencv)
-        Qt Version: $(qmake -query QT_VERSION)
+        OpenCV Version: 2.4.13
+        Qt Version: 6.x
         EOF
 
     - name: Test executable
@@ -423,9 +366,9 @@ jobs:
       run: |
         BUILD_DATE=$(date '+%Y%m%d')
         SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-        ZIP_NAME="stirtrace-linux-4.0-${BUILD_DATE}-${SHORT_SHA}-${{ matrix.artifact_suffix }}.tar.gz"
-        tar -czf "$ZIP_NAME" -C release .
-        echo "RELEASE_FILE=$ZIP_NAME" >> $GITHUB_ENV
+        TAR_NAME="stirtrace-linux-4.0-${BUILD_DATE}-${SHORT_SHA}-${{ matrix.artifact_suffix }}.tar.gz"
+        tar -czf "$TAR_NAME" -C release .
+        echo "RELEASE_FILE=$TAR_NAME" >> $GITHUB_ENV
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -435,7 +378,7 @@ jobs:
         retention-days: 30
 
   create-release:
-    needs: [build-windows, build-linux]
+    needs: [build-windows, build-linux-nix]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     permissions:
