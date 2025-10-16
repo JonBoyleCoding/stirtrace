@@ -331,12 +331,17 @@ jobs:
           cmake \
           qt6-base-dev \
           qt6-base-dev-tools \
-          libopencv-dev \
           libqt6core6 \
           libqt6gui6 \
           libqt6widgets6 \
           libqt6network6 \
           qt6-qpa-plugins
+
+    - name: Install OpenCV 2
+      uses: rayandrews/setup-opencv@v1
+      with:
+        opencv-version: '2.4.13'
+        build-static: true
 
     - name: Patch source for NoGUI build
       if: matrix.build_type == 'nogui'
