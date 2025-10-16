@@ -11,15 +11,11 @@
 
 	gui_package = pkgs.qt6Packages.callPackage ./build.nix {};
 	no_gui_package = pkgs.qt6Packages.callPackage ./build-nogui.nix {};
-	static_gui_package = pkgs.qt6Packages.callPackage ./build-static.nix {};
-	static_no_gui_package = pkgs.qt6Packages.callPackage ./build-static-nogui.nix {};
   in {
 
     packages.x86_64-linux = {
 		gui = gui_package;
 		terminal = no_gui_package;
-		static-gui = static_gui_package;
-		static-terminal = static_no_gui_package;
 		default = gui_package;
 	};
 
